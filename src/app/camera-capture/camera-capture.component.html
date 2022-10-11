@@ -1,0 +1,12 @@
+<video [srcObject]="media" autoplay></video>
+<br>
+
+<input type="checkbox" [(ngModel)]="videoCheck">
+<label>Video</label>
+<br>
+
+<input type="checkbox" [(ngModel)]="audioCheck">
+<label>Audio</label>
+<br>
+
+<button (click)="startRecording()">Start</button>

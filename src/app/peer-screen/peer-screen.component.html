@@ -1,0 +1,32 @@
+<h1 *ngIf="meAsPeer">My Peer ID: {{meAsPeer.id}}</h1>
+
+<input type="checkbox" [(ngModel)]="showMyOwn">
+<label>Show my own stream</label>
+<br>
+
+<h1>Peer's stream</h1>
+<video [srcObject]="peerMediaStream" autoplay></video>
+<br>
+
+<div *ngIf="showMyOwn">
+    <h1>My own stream:</h1>
+    <video [srcObject]="myMediaStream" autoplay></video>
+    <br>
+</div>
+
+<input type="checkbox" [(ngModel)]="videoCheck">
+<label>Video</label>
+<br>
+
+<input type="checkbox" [(ngModel)]="audioCheck">
+<label>Audio</label>
+<br>
+
+<button (click)="startRecording()">Start</button>
+<br>
+
+<br>
+<h4>Other peer's ID:</h4>
+<input type="text" [(ngModel)]="otherPeerId">
+<br>
+<button (click)="call()">Call</button>
