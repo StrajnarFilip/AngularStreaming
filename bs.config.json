@@ -1,0 +1,6 @@
+{
+    "port": 9501,
+    "server": {
+        "baseDir": "./dist/project-name"
+    }
+}
