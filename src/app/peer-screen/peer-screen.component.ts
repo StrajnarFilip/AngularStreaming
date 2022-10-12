@@ -65,20 +65,23 @@ export class PeerScreenComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.meAsPeer = new Peer({ host: "wp.1fs.us", port: 443, path: '/myapp', secure: true });
-    this.meAsPeer.on("call", (call) => {
-      console.log("My stream:", this.myMediaStream)
-      call.answer(this.myMediaStream)
-      call.on("stream", (stream => {
-        this.peerMediaStream = stream
-      }))
-    })
-
     this.route.queryParamMap.subscribe(queries => {
       const peerIdQuery = queries.get("peer")
       if (peerIdQuery) {
         this.otherPeerId = peerIdQuery
       }
+      const myOwnId = queries.get("myid")
+      this.meAsPeer = myOwnId ?
+        new Peer(myOwnId, { host: "wp.1fs.us", port: 443, path: '/myapp', secure: true }) :
+        new Peer({ host: "wp.1fs.us", port: 443, path: '/myapp', secure: true })
+
+      this.meAsPeer.on("call", (call) => {
+        console.log("My stream:", this.myMediaStream)
+        call.answer(this.myMediaStream)
+        call.on("stream", (stream => {
+          this.peerMediaStream = stream
+        }))
+      })
     })
   }
 }
