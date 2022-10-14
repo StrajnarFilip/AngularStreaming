@@ -121,7 +121,7 @@ export class PeerScreenComponent implements OnInit {
       this.meAsPeer.on("call", (call) => {
         // Answer with this client's media stream
         console.log("Call connection", call)
-        call.answer(new MediaStream())
+        call.answer(this.myMediaStream)
 
         // When receiving a stream, assign it to peer's media stream
         call.on("stream", (stream => {
@@ -159,7 +159,12 @@ export class PeerScreenComponent implements OnInit {
   }
 
   linkToClipboard() {
-    if (this.meAsPeer)
-      navigator.clipboard.writeText(`${window.location.href}?peer=${this.meAsPeer.id}`).then(_ => _)
+    if (this.meAsPeer) {
+      const protocol = window.location.protocol
+      const hostName = window.location.hostname
+      const port = window.location.port
+      const path = window.location.pathname
+      navigator.clipboard.writeText(`${protocol}//${hostName}:${port}${path}?peer=${this.meAsPeer.id}`).then(_ => _)
+    }
   }
 }
