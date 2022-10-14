@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { ApplicationRef, Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import Peer from 'peerjs';
+import Peer, { DataConnection } from 'peerjs';
 
 @Component({
   selector: 'app-peer-screen',
@@ -15,17 +15,14 @@ export class PeerScreenComponent implements OnInit {
   videoCheck: boolean = false
   audioCheck: boolean = false
   showMyOwn: boolean = false
+  connected: boolean = false
 
   meAsPeer?: Peer
   otherPeerId?: string
 
   constructor(private route: ActivatedRoute) { }
 
-  call() {
-    if (!this.myMediaStream) {
-      console.log("Media stream is not activated on this client")
-      return
-    }
+  connect() {
     if (!this.meAsPeer) {
       console.log("This client does not have a set peer")
       return
@@ -35,14 +32,25 @@ export class PeerScreenComponent implements OnInit {
       return
     }
 
-    const call = this.meAsPeer.call(this.otherPeerId, this.myMediaStream)
-    call.on("stream", (otherPeerStream) => {
-      this.peerMediaStream = otherPeerStream
-    })
-    console.log("Connection established")
+    if (!this.connected) {
+      this.establishConnection(this.meAsPeer, this.otherPeerId)
+    }
+
+    if (this.myMediaStream) {
+      this.startStreaming(this.meAsPeer, this.otherPeerId, this.myMediaStream)
+    }
   }
 
-  screenCapture(video: boolean = true, audio: boolean = false): Promise<MediaStream> {
+  startStreaming(meAsPeer: Peer, otherPeerId: string, myMediaStream: MediaStream) {
+    const call = meAsPeer.call(otherPeerId, myMediaStream)
+    console.log("Calling object", call)
+    call.on("stream", (otherPeerStream) => {
+      this.connected = call.open
+      this.peerMediaStream = otherPeerStream
+    })
+  }
+
+  getScreenMediaDevice(video: boolean = true, audio: boolean = false): Promise<MediaStream> {
     return navigator.mediaDevices.getDisplayMedia({
       video: video ? {
         frameRate: 60,
@@ -58,30 +66,100 @@ export class PeerScreenComponent implements OnInit {
   }
 
   startRecording() {
-    this.screenCapture(this.videoCheck, this.audioCheck)
+    this.getScreenMediaDevice(this.videoCheck, this.audioCheck)
       .then(mediaStream => {
+        // When user select mediaStream, set
+        // it as the stream of this client
         this.myMediaStream = mediaStream
+        // If connection is already established,
+        // also start streaming it
+        if (this.connected && this.meAsPeer && this.otherPeerId) {
+          this.startStreaming(this.meAsPeer, this.otherPeerId, mediaStream)
+        }
       })
+  }
+
+  establishConnection(meAsPeer: Peer, otherPeerId: string) {
+    // First try to connect to peer
+    const dataConnection = meAsPeer.connect(otherPeerId)
+    console.log("DATACONN", dataConnection)
+    dataConnection.on("open", () => {
+      // When connection is opened successfully add following handler:
+      dataConnection.on("data", (data) => {
+        if (data == "ack") {
+          // When "ack" message is received, update connected status
+          this.connected = dataConnection.open
+        }
+      })
+    })
   }
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe(queries => {
+      // Extract other peer's ID from query if present
       const peerIdQuery = queries.get("peer")
       if (peerIdQuery) {
         this.otherPeerId = peerIdQuery
       }
+      // Extract this client's ID from query if present
       const myOwnId = queries.get("myid")
-      this.meAsPeer = myOwnId ?
-        new Peer(myOwnId, { host: "wp.1fs.us", port: 443, path: '/myapp', secure: true }) :
-        new Peer({ host: "wp.1fs.us", port: 443, path: '/myapp', secure: true })
+      this.createPeerForThisClient(myOwnId)
 
+      this.handleCallStream()
+      this.handleNewConnectionOpen()
+    })
+  }
+
+  createPeerForThisClient(myOwnId: string | null) {
+    this.meAsPeer = myOwnId ?
+      new Peer(myOwnId, { host: "wp.1fs.us", port: 443, path: '/myapp', secure: true }) :
+      new Peer({ host: "wp.1fs.us", port: 443, path: '/myapp', secure: true })
+  }
+
+  handleCallStream() {
+    if (this.meAsPeer) {
       this.meAsPeer.on("call", (call) => {
-        console.log("My stream:", this.myMediaStream)
-        call.answer(this.myMediaStream)
+        // Answer with this client's media stream
+        console.log("Call connection", call)
+        call.answer(new MediaStream())
+
+        // When receiving a stream, assign it to peer's media stream
         call.on("stream", (stream => {
+          console.log("Gotten stream", stream)
           this.peerMediaStream = stream
         }))
+
+        call.on("error", (error) => {
+          console.error("Stream error!", error)
+          this.peerMediaStream = undefined
+        })
+
+        call.on("close", () => {
+          console.error("Stream closed!")
+          this.peerMediaStream = undefined
+        })
       })
-    })
+    }
+  }
+
+  handleNewConnectionOpen() {
+    if (this.meAsPeer) {
+      this.meAsPeer.on("connection", (connection) => {
+        // Whenever there is a new connection, add the following handler
+        connection.on("open", () => {
+          // Whenever connection is open, update 
+          // connected status and other peer's ID
+          this.connected = connection.open
+          this.otherPeerId = connection.peer
+          // Also send an "ack" message
+          connection.send("ack")
+        })
+      })
+    }
+  }
+
+  linkToClipboard() {
+    if (this.meAsPeer)
+      navigator.clipboard.writeText(`${window.location.href}?peer=${this.meAsPeer.id}`).then(_ => _)
   }
 }
