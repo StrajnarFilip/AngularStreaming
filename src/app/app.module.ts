@@ -7,13 +7,15 @@ import { ScreenCaptureComponent } from './screen-capture/screen-capture.componen
 import { CameraCaptureComponent } from './camera-capture/camera-capture.component';
 import { routes } from './routes';
 import { PeerScreenComponent } from './peer-screen/peer-screen.component';
+import { PeerMediaComponent } from './peer-media/peer-media.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     ScreenCaptureComponent,
     CameraCaptureComponent,
-    PeerScreenComponent
+    PeerScreenComponent,
+    PeerMediaComponent
   ],
   imports: [
     BrowserModule,

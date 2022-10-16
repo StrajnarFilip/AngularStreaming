@@ -4,17 +4,17 @@ import Peer, { DataConnection } from 'peerjs';
 import { MediaService } from '../media-service/media.service';
 
 @Component({
-  selector: 'app-peer-screen',
-  templateUrl: './peer-screen.component.html',
-  styleUrls: ['./peer-screen.component.scss']
+  selector: 'app-peer-media',
+  templateUrl: './peer-media.component.html',
+  styleUrls: ['./peer-media.component.scss']
 })
-export class PeerScreenComponent implements OnInit {
+export class PeerMediaComponent implements OnInit {
 
   myMediaStream?: MediaStream
   peerMediaStream?: MediaStream
 
-  videoCheck: boolean = true
-  audioCheck: boolean = false
+  videoCheck: boolean = false
+  audioCheck: boolean = true
   showMyOwn: boolean = false
   connected: boolean = false
 
@@ -52,7 +52,7 @@ export class PeerScreenComponent implements OnInit {
   }
 
   startRecording() {
-    this.media.GetScreenShareStream(this.videoCheck, this.audioCheck)
+    this.media.GetDeviceStream(this.videoCheck, this.audioCheck)
       .then(mediaStream => {
         // When user select mediaStream, set
         // it as the stream of this client
